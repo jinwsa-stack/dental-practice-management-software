@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String
+  dateOfBirth DateTime
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointments Appointment[]
+}
+
+model Dentist {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String
+  specialty String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
+  schedule     DentistSchedule[]
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  patientId String
+  dentistId String
+  startTime DateTime
+  endTime   DateTime
+  type      String // checkup, cleaning, filling, extraction, etc.
+  status    String   @default("scheduled") // scheduled, confirmed, completed, cancelled
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([dentistId])
+  @@index([startTime])
+}
+
+model DentistSchedule {
+  id          String  @id @default(uuid())
+  dentistId   String
+  dayOfWeek   Int // 0-6 (Sunday-Saturday)
+  startTime   String // "09:00"
+  endTime     String // "17:00"
+  isAvailable Boolean @default(true)
+
+  dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+
+  @@unique([dentistId, dayOfWeek])
+  @@index([dentistId])
+}
